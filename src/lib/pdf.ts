@@ -3,6 +3,7 @@
 // and supports cancellation via AbortSignal.
 import type { Novel } from "./novels";
 import { saveUploadedNovel } from "./uploadedNovels";
+import { analyzeNovelText } from "./api";
 
 export class PdfExtractionError extends Error {
   constructor(message: string) {
@@ -133,6 +134,12 @@ export async function extractNovelFromPdf(
     chapters: chapters.length ? chapters : [{ title: "Document", paragraphs: ["(empty)"] }],
   };
 
+  const fullText = pageTexts.join(" ");
+  const analysisResult = await analyzeNovelText(fullText, "en");
+  if (analysisResult && analysisResult.success) {
+    novel.apiNovelId = analysisResult.novel_id;
+    novel.emotionMap = analysisResult.emotions;
+  }
   saveUploadedNovel(novel);
   (novel as Novel & { _charCount?: number })._charCount = totalChars;
   return novel;

@@ -7,6 +7,8 @@ export type Novel = {
   tagline: string;
   coverGradient: string;
   chapters: Chapter[];
+  apiNovelId?: string;
+  emotionMap?: any[];
 };
 
 const lorem1 = [
