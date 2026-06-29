@@ -74,6 +74,7 @@ type CharItem = {
   paraIdx: number;
   isSpace: boolean;
   wordKey: string;
+  wordIndex: number;
 };
 
 // How many chapters to keep around the cursor in the DOM.
@@ -85,21 +86,24 @@ const WINDOW_AHEAD = 1;
 function buildChapterItems(
   paragraphs: string[],
   chapIdx: number,
-): { items: CharItem[]; stopCount: number } {
+  startWordIndex: number,
+): { items: CharItem[]; stopCount: number; wordCount: number } {
   const items: CharItem[] = [];
+  let globalWordIndex = startWordIndex;
   paragraphs.forEach((p, paraIdx) => {
     const words = p.split(/\s+/).filter(Boolean);
     words.forEach((w, wi) => {
       const wordKey = `c${chapIdx}-p${paraIdx}-w${wi}`;
       for (const c of w) {
-        items.push({ ch: c, paraIdx, isSpace: false, wordKey });
+        items.push({ ch: c, paraIdx, isSpace: false, wordKey, wordIndex: globalWordIndex });
       }
       if (wi < words.length - 1) {
-        items.push({ ch: " ", paraIdx, isSpace: true, wordKey: `${wordKey}-sp` });
+        items.push({ ch: " ", paraIdx, isSpace: true, wordKey: `${wordKey}-sp`, wordIndex: globalWordIndex });
       }
+      globalWordIndex++;
     });
   });
-  return { items, stopCount: items.length };
+  return { items, stopCount: items.length, wordCount: globalWordIndex - startWordIndex };
 }
 
 function Reader({ novel }: { novel: Novel }) {
@@ -116,19 +120,24 @@ function Reader({ novel }: { novel: Novel }) {
   // Lightweight metadata for every chapter — no item arrays, just counts.
   const chapMetas = useMemo(() => {
     let offset = 0;
+    let wordOffset = 0;
     return novel.chapters.map((ch: { title: string; paragraphs: string[] }) => {
       let stops = 0;
+      let wordCount = 0;
       ch.paragraphs.forEach((p) => {
         const words = p.split(/\s+/).filter(Boolean);
+        wordCount += words.length;
         words.forEach((w, wi) => {
           stops += w.length;
           if (wi < words.length - 1) stops += 1;
         });
       });
-      const meta = { title: ch.title, stopCount: stops, offset };
+      const meta = { title: ch.title, stopCount: stops, offset, wordOffset, wordCount };
       offset += stops;
+      wordOffset += wordCount;
       return meta;
     });
+
   }, [novel]);
 
   const totalStops = useMemo(
@@ -176,11 +185,11 @@ function Reader({ novel }: { novel: Novel }) {
   const mountedChapters = useMemo(() => {
     const out: { idx: number; title: string; items: CharItem[] }[] = [];
     for (let i = windowRange.from; i <= windowRange.to; i++) {
-      const built = buildChapterItems(novel.chapters[i].paragraphs, i);
+      const built = buildChapterItems(novel.chapters[i].paragraphs, i, chapMetas[i].wordOffset);
       out.push({ idx: i, title: novel.chapters[i].title, items: built.items });
     }
     return out;
-  }, [windowRange.from, windowRange.to, novel.chapters]);
+  }, [windowRange.from, windowRange.to, novel.chapters, chapMetas]);
 
   // Drop stale refs whenever the window shifts.
   useEffect(() => {
