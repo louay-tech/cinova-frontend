@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Pause, Play, Gauge, Settings2, ChevronDown, ChevronUp, X } from "lucide-react";
 import { getNovel } from "@/lib/novels";
 import type { Novel } from "@/lib/novels";
+import { matchMusicForScene, type MatchedMusic, type EmotionScene } from "@/lib/api";
 import { isRtlText } from "@/lib/rtl";
 import { setLastPosition, getLastPosition } from "@/lib/uploadedNovels";
 
@@ -277,6 +278,37 @@ function Reader({ novel }: { novel: Novel }) {
 
   const globalActive = chapMetas[active.chap].offset + active.local;
   const progress = totalStops === 0 ? 0 : ((globalActive + 1) / totalStops) * 100;
+
+  // Current word index at the visible reader cursor.
+  const currentWordIndex = useMemo(() => {
+    const chapItems = mountedChapters.find((c) => c.idx === active.chap)?.items;
+    if (!chapItems || !chapItems[active.local]) return chapMetas[active.chap].wordOffset;
+    return chapItems[active.local].wordIndex;
+  }, [mountedChapters, active.chap, active.local, chapMetas]);
+
+  // Hidden AI cursor — leads the visible cursor by a fixed word offset.
+  const AI_CURSOR_LEAD_WORDS = 8;
+  const aiCursorWordIndex = currentWordIndex + AI_CURSOR_LEAD_WORDS;
+
+  const [currentMatchedMusic, setCurrentMatchedMusic] = useState<MatchedMusic | null>(null);
+  const [activeScene, setActiveScene] = useState<EmotionScene | null>(null);
+  const lastRequestedSceneRef = useRef<EmotionScene | null>(null);
+
+  useEffect(() => {
+    if (!novel.emotionMap || novel.emotionMap.length === 0) return;
+    const scene = novel.emotionMap.find(
+      (s: EmotionScene) => aiCursorWordIndex >= s.start && aiCursorWordIndex <= s.end,
+    );
+    if (!scene) return;
+    if (lastRequestedSceneRef.current === scene) return;
+    lastRequestedSceneRef.current = scene;
+    setActiveScene(scene);
+    matchMusicForScene(scene).then((result) => {
+      if (result && result.success) {
+        setCurrentMatchedMusic(result);
+      }
+    });
+  }, [aiCursorWordIndex, novel.emotionMap]);
 
   const sizeScale = cursorSize === "small" ? 0.7 : cursorSize === "large" ? 1.4 : 1;
   let caretStyle: React.CSSProperties = {
