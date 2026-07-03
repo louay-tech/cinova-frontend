@@ -298,6 +298,7 @@ function Reader({ novel }: { novel: Novel }) {
 
   useEffect(() => {
     if (!novel.emotionMap || novel.emotionMap.length === 0) return;
+    if (!playing) return;
     const scene = novel.emotionMap.find(
       (s: EmotionScene) => aiCursorWordIndex >= s.start && aiCursorWordIndex <= s.end,
     );
@@ -311,7 +312,7 @@ function Reader({ novel }: { novel: Novel }) {
         playMatched(result);
       }
     });
-  }, [aiCursorWordIndex, novel.emotionMap, playMatched]);
+  }, [aiCursorWordIndex, novel.emotionMap, playMatched, playing]);
 
   // Pause/resume audio in sync with reading play state.
   useEffect(() => {
