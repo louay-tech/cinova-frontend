@@ -14,6 +14,7 @@ export type EmotionScene = {
   environment_intensity: number;
   transition_out: string;
   transition_duration: number;
+  emotion_group?: string;
 };
 
 export type AnalyzeResult = {
@@ -47,6 +48,7 @@ export type MatchedMusic = {
   matched_song: {
     song_id: string;
     emotion: string;
+    emotion_group?: string;
     title: string;
     file: string;
     composer: string;
@@ -58,6 +60,7 @@ export type MatchedMusic = {
   };
   transition_out: string;
   transition_duration: number;
+  emotion_group?: string;
   match_score: number;
   same_song?: boolean;
   emotion_distance?: number;
