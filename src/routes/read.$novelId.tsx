@@ -296,6 +296,7 @@ function Reader({ novel }: { novel: Novel }) {
   const lastRequestedSceneRef = useRef<EmotionScene | null>(null);
   const currentSongIdRef = useRef<string | null>(null);
   const currentEmotionRef = useRef<string | null>(null);
+  const lastAiCursorRef = useRef<number>(-1);
   const { playMatched, pauseAll, resumeActive, audioState } = useAudioEngine();
 
   useEffect(() => {
@@ -305,7 +306,9 @@ function Reader({ novel }: { novel: Novel }) {
       (s: EmotionScene) => aiCursorWordIndex >= s.start && aiCursorWordIndex <= s.end,
     );
     if (!scene) return;
-    if (lastRequestedSceneRef.current === scene) return;
+    const movedBackward = aiCursorWordIndex < lastAiCursorRef.current;
+    lastAiCursorRef.current = aiCursorWordIndex;
+    if (!movedBackward && lastRequestedSceneRef.current === scene) return;
     lastRequestedSceneRef.current = scene;
     setActiveScene(scene);
     matchMusicForScene(scene, currentSongIdRef.current ?? undefined, currentEmotionRef.current ?? undefined).then((result) => {
