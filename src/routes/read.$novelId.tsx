@@ -294,6 +294,8 @@ function Reader({ novel }: { novel: Novel }) {
   const [currentMatchedMusic, setCurrentMatchedMusic] = useState<MatchedMusic | null>(null);
   const [activeScene, setActiveScene] = useState<EmotionScene | null>(null);
   const lastRequestedSceneRef = useRef<EmotionScene | null>(null);
+  const currentSongIdRef = useRef<string | null>(null);
+  const currentEmotionRef = useRef<string | null>(null);
   const { playMatched, pauseAll, resumeActive, audioState } = useAudioEngine();
 
   useEffect(() => {
@@ -306,10 +308,12 @@ function Reader({ novel }: { novel: Novel }) {
     if (lastRequestedSceneRef.current === scene) return;
     lastRequestedSceneRef.current = scene;
     setActiveScene(scene);
-    matchMusicForScene(scene).then((result) => {
+    matchMusicForScene(scene, currentSongIdRef.current ?? undefined, currentEmotionRef.current ?? undefined).then((result) => {
       if (result && result.success) {
         setCurrentMatchedMusic(result);
         playMatched(result);
+        currentSongIdRef.current = result.matched_song.song_id;
+        currentEmotionRef.current = scene.emotion;
       }
     });
   }, [aiCursorWordIndex, novel.emotionMap, playMatched, playing]);

@@ -45,6 +45,8 @@ export async function analyzeNovelText(text: string, language: string = "en"): P
 export type MatchedMusic = {
   success: boolean;
   matched_song: {
+    song_id: string;
+    emotion: string;
     title: string;
     file: string;
     composer: string;
@@ -57,14 +59,20 @@ export type MatchedMusic = {
   transition_out: string;
   transition_duration: number;
   match_score: number;
+  same_song?: boolean;
+  emotion_distance?: number;
 };
 
-export async function matchMusicForScene(scene: Partial<EmotionScene>): Promise<MatchedMusic | null> {
+export async function matchMusicForScene(
+  scene: Partial<EmotionScene>,
+  currentSongId?: string,
+  currentEmotion?: string,
+): Promise<MatchedMusic | null> {
   try {
     const response = await fetch(`${API_BASE_URL}/match-music`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(scene),
+      body: JSON.stringify({ ...scene, current_song_id: currentSongId, current_emotion: currentEmotion }),
     });
     if (!response.ok) {
       console.error("Match-music failed:", await response.text());
