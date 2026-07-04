@@ -311,14 +311,16 @@ function Reader({ novel }: { novel: Novel }) {
     if (!movedBackward && lastRequestedSceneRef.current === scene) return;
     lastRequestedSceneRef.current = scene;
     setActiveScene(scene);
+    document.title = `طلب: ${scene.emotion}/${scene.emotion_group}`;
     matchMusicForScene(scene, currentSongIdRef.current ?? undefined, currentEmotionRef.current ?? undefined).then((result) => {
+      document.title = `نتيجة: ${result ? (result.success ? "نجح-" + result.matched_song?.title : "فشل") : "null"}`;
       if (result && result.success) {
         setCurrentMatchedMusic(result);
         playMatched(result);
         currentSongIdRef.current = result.matched_song.song_id;
         currentEmotionRef.current = scene.emotion;
       }
-    });
+    }).catch((err) => { document.title = `خطأ: ${err?.message || err}`; });
   }, [aiCursorWordIndex, novel.emotionMap, playMatched, playing]);
 
   // Pause/resume audio in sync with reading play state.
