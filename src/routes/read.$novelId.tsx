@@ -103,7 +103,7 @@ function buildChapterItems(
         items.push({ ch: " ", paraIdx, isSpace: true, wordKey: `${wordKey}-sp`, wordIndex: globalWordIndex });
       }
       globalWordIndex++;
-    }).catch((err) => setDebugInfo(`خطأ: ${err?.message || err}`));
+    });
   });
   return { items, stopCount: items.length, wordCount: globalWordIndex - startWordIndex };
 }
@@ -297,7 +297,6 @@ function Reader({ novel }: { novel: Novel }) {
   const currentSongIdRef = useRef<string | null>(null);
   const currentEmotionRef = useRef<string | null>(null);
   const lastAiCursorRef = useRef<number>(-1);
-  const [debugInfo, setDebugInfo] = useState<string>("");
   const { playMatched, pauseAll, resumeActive, audioState } = useAudioEngine();
 
   useEffect(() => {
@@ -312,16 +311,14 @@ function Reader({ novel }: { novel: Novel }) {
     if (!movedBackward && lastRequestedSceneRef.current === scene) return;
     lastRequestedSceneRef.current = scene;
     setActiveScene(scene);
-    setDebugInfo(`طلب مطابقة: ${scene.emotion} @ ${aiCursorWordIndex}`);
     matchMusicForScene(scene, currentSongIdRef.current ?? undefined, currentEmotionRef.current ?? undefined).then((result) => {
-      setDebugInfo(`نتيجة: ${result ? JSON.stringify({ok: result.success, song: result.matched_song?.title, storage: !!result.matched_song?.storage_path}) : "null"}`);
       if (result && result.success) {
         setCurrentMatchedMusic(result);
         playMatched(result);
         currentSongIdRef.current = result.matched_song.song_id;
         currentEmotionRef.current = scene.emotion;
       }
-    }).catch((err) => setDebugInfo(`خطأ: ${err?.message || err}`));
+    });
   }, [aiCursorWordIndex, novel.emotionMap, playMatched, playing]);
 
   // Pause/resume audio in sync with reading play state.
@@ -375,7 +372,6 @@ function Reader({ novel }: { novel: Novel }) {
       className="min-h-screen flex flex-col overflow-x-hidden"
       style={{ touchAction: "pan-y", overflowX: "hidden", maxWidth: "100%" }}
     >
-      <div style={{position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 9999, background: "black", color: "lime", fontSize: "10px", padding: "6px", direction: "ltr", wordBreak: "break-all"}}>{debugInfo}</div>
       <div className="sticky top-0 z-30 backdrop-blur-md bg-background/70 border-b border-border">
 
         <div className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between">
