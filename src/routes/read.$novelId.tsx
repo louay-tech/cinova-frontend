@@ -288,7 +288,12 @@ function Reader({ novel }: { novel: Novel }) {
   }, [mountedChapters, active.chap, active.local, chapMetas]);
 
   // Hidden AI cursor — leads the visible cursor by a fixed word offset.
-  const AI_CURSOR_LEAD_WORDS = 8;
+  const SAFETY_SECONDS = 4;
+  const msPerChar = 300 - (speed / 100) * 250;
+  const avgCharsPerWord = 5.5;
+  const msPerWord = msPerChar * avgCharsPerWord;
+  const dynamicLeadWords = Math.round((SAFETY_SECONDS * 1000) / msPerWord);
+  const AI_CURSOR_LEAD_WORDS = Math.min(40, Math.max(8, dynamicLeadWords));
   const aiCursorWordIndex = currentWordIndex + AI_CURSOR_LEAD_WORDS;
 
   const [currentMatchedMusic, setCurrentMatchedMusic] = useState<MatchedMusic | null>(null);
