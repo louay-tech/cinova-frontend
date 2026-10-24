@@ -288,30 +288,45 @@ function Reader({ novel }: { novel: Novel }) {
   }, [mountedChapters, active.chap, active.local, chapMetas]);
 
   // Hidden AI cursor — leads the visible cursor by a fixed word offset.
-  const AI_CURSOR_LEAD_WORDS = 8;
+  const SAFETY_SECONDS = 4;
+  const msPerChar = 300 - (speed / 100) * 250;
+  const avgCharsPerWord = 5.5;
+  const msPerWord = msPerChar * avgCharsPerWord;
+  const dynamicLeadWords = Math.round((SAFETY_SECONDS * 1000) / msPerWord);
+  const AI_CURSOR_LEAD_WORDS = Math.min(40, Math.max(8, dynamicLeadWords));
   const aiCursorWordIndex = currentWordIndex + AI_CURSOR_LEAD_WORDS;
 
   const [currentMatchedMusic, setCurrentMatchedMusic] = useState<MatchedMusic | null>(null);
   const [activeScene, setActiveScene] = useState<EmotionScene | null>(null);
   const lastRequestedSceneRef = useRef<EmotionScene | null>(null);
+  const currentSongIdRef = useRef<string | null>(null);
+  const currentEmotionRef = useRef<string | null>(null);
+  const lastAiCursorRef = useRef<number>(-1);
   const { playMatched, pauseAll, resumeActive, audioState } = useAudioEngine();
 
   useEffect(() => {
     if (!novel.emotionMap || novel.emotionMap.length === 0) return;
+    if (!playing) return;
     const scene = novel.emotionMap.find(
       (s: EmotionScene) => aiCursorWordIndex >= s.start && aiCursorWordIndex <= s.end,
     );
     if (!scene) return;
-    if (lastRequestedSceneRef.current === scene) return;
+    const movedBackward = aiCursorWordIndex < lastAiCursorRef.current;
+    lastAiCursorRef.current = aiCursorWordIndex;
+    if (!movedBackward && lastRequestedSceneRef.current === scene) return;
     lastRequestedSceneRef.current = scene;
     setActiveScene(scene);
-    matchMusicForScene(scene).then((result) => {
+    document.title = `طلب: ${scene.emotion}/${scene.emotion_group}`;
+    matchMusicForScene(scene, currentSongIdRef.current ?? undefined, currentEmotionRef.current ?? undefined).then((result) => {
+      document.title = `نتيجة: ${result ? (result.success ? "نجح-" + result.matched_song?.title : "فشل") : "null"}`;
       if (result && result.success) {
         setCurrentMatchedMusic(result);
         playMatched(result);
+        currentSongIdRef.current = result.matched_song.song_id;
+        currentEmotionRef.current = scene.emotion;
       }
-    });
-  }, [aiCursorWordIndex, novel.emotionMap, playMatched]);
+    }).catch((err) => { document.title = `خطأ: ${err?.message || err}`; });
+  }, [aiCursorWordIndex, novel.emotionMap, playMatched, playing]);
 
   // Pause/resume audio in sync with reading play state.
   useEffect(() => {

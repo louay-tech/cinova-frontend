@@ -19,6 +19,12 @@ export class PdfCancelledError extends Error {
   }
 }
 
+function detectLanguage(text: string): string {
+  const arabicChars = (text.match(/[\u0600-\u06FF]/g) || []).length;
+  const sampleLength = Math.min(text.length, 2000);
+  return arabicChars > sampleLength * 0.15 ? "ar" : "en";
+}
+
 const FRIENDLY_ERROR =
   "Could not read this PDF. It may be scanned or image-based. Please try a text-based PDF.";
 
@@ -135,7 +141,8 @@ export async function extractNovelFromPdf(
   };
 
   const fullText = pageTexts.join(" ");
-  const analysisResult = await analyzeNovelText(fullText, "en");
+  const detectedLang = detectLanguage(fullText);
+  const analysisResult = await analyzeNovelText(fullText, detectedLang);
   if (analysisResult && analysisResult.success) {
     novel.apiNovelId = analysisResult.novel_id;
     novel.emotionMap = analysisResult.emotions;
