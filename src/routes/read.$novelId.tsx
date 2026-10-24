@@ -4,6 +4,7 @@ import { ArrowLeft, Pause, Play, Gauge, Settings2, ChevronDown, ChevronUp, X } f
 import { getNovel } from "@/lib/novels";
 import type { Novel } from "@/lib/novels";
 import { matchMusicForScene, type MatchedMusic, type EmotionScene } from "@/lib/api";
+import { useAudioEngine } from "@/lib/audioEngine";
 import { isRtlText } from "@/lib/rtl";
 import { setLastPosition, getLastPosition } from "@/lib/uploadedNovels";
 
@@ -293,6 +294,7 @@ function Reader({ novel }: { novel: Novel }) {
   const [currentMatchedMusic, setCurrentMatchedMusic] = useState<MatchedMusic | null>(null);
   const [activeScene, setActiveScene] = useState<EmotionScene | null>(null);
   const lastRequestedSceneRef = useRef<EmotionScene | null>(null);
+  const { playMatched, pauseAll, resumeActive, audioState } = useAudioEngine();
 
   useEffect(() => {
     if (!novel.emotionMap || novel.emotionMap.length === 0) return;
@@ -306,9 +308,19 @@ function Reader({ novel }: { novel: Novel }) {
     matchMusicForScene(scene).then((result) => {
       if (result && result.success) {
         setCurrentMatchedMusic(result);
+        playMatched(result);
       }
     });
-  }, [aiCursorWordIndex, novel.emotionMap]);
+  }, [aiCursorWordIndex, novel.emotionMap, playMatched]);
+
+  // Pause/resume audio in sync with reading play state.
+  useEffect(() => {
+    if (playing) {
+      resumeActive();
+    } else {
+      pauseAll();
+    }
+  }, [playing, resumeActive, pauseAll]);
 
   const sizeScale = cursorSize === "small" ? 0.7 : cursorSize === "large" ? 1.4 : 1;
   let caretStyle: React.CSSProperties = {

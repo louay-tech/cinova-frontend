@@ -5,6 +5,7 @@ import { Nav } from "@/components/Nav";
 import { useLang } from "@/lib/i18n";
 import { novels } from "@/lib/novels";
 import { listUploadedNovels, deleteUploadedNovel, type UploadedRecord } from "@/lib/uploadedNovels";
+import { deleteNovelFromServer } from "@/lib/api";
 
 export const Route = createFileRoute("/library")({
   head: () => ({
@@ -28,10 +29,11 @@ function Library() {
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, []);
-
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     deleteUploadedNovel(id);
     setUploaded(listUploadedNovels());
+    await deleteNovelFromServer(id);
+  };
   };
 
   return (

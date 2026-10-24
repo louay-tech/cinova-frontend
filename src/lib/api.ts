@@ -76,3 +76,15 @@ export async function matchMusicForScene(scene: Partial<EmotionScene>): Promise<
     return null;
   }
 }
+
+export async function deleteNovelFromServer(novelId: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/novels/${novelId}`, {
+      method: "DELETE",
+    });
+    return response.ok;
+  } catch (err) {
+    console.error("Delete novel request error:", err);
+    return false;
+  }
+}
