@@ -34,7 +34,6 @@ function Library() {
     setUploaded(listUploadedNovels());
     await deleteNovelFromServer(id);
   };
-  };
 
   return (
     <div className="min-h-screen">
