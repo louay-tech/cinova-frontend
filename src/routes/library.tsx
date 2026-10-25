@@ -29,10 +29,12 @@ function Library() {
     window.addEventListener("focus", onFocus);
     return () => window.removeEventListener("focus", onFocus);
   }, []);
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, apiNovelId?: string) => {
     deleteUploadedNovel(id);
     setUploaded(listUploadedNovels());
-    await deleteNovelFromServer(id);
+    if (apiNovelId) {
+      await deleteNovelFromServer(apiNovelId);
+    }
   };
 
   return (
@@ -140,7 +142,7 @@ function Library() {
                     </div>
                   </div>
                   <button
-                    onClick={() => handleDelete(rec.novel.id)}
+                    onClick={() => handleDelete(rec.novel.id, rec.novel.apiNovelId)}
                     className="opacity-60 hover:opacity-100 text-muted-foreground hover:text-destructive transition"
                     aria-label={t("delete")}
                   >
